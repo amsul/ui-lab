@@ -1,0 +1,50 @@
+[
+  {
+    "filePath": "./test/fixtures/styles/objects/component.less",
+    "length": 68,
+    "comment": "/**\n * <block> component\n */",
+    "namespace": "component",
+    "type": "block",
+    "variation": "base",
+    "fullName": "component/base",
+    "sourceName": "component",
+    "variationName": "component",
+    "code": ".component {\n    font-weight: bold;\n}"
+  },
+  {
+    "filePath": "./test/fixtures/styles/objects/component.less",
+    "length": 92,
+    "comment": "/**\n     * <element> box\n     */",
+    "namespace": "component",
+    "type": "element",
+    "variation": "base-box",
+    "fullName": "component/base-box",
+    "sourceName": "component",
+    "variationName": "box",
+    "code": "// Descendant of .component {}\n    .component-box {\n        border: 1px solid;\n    }"
+  },
+  {
+    "filePath": "./test/fixtures/styles/objects/component.less",
+    "length": 109,
+    "comment": "/**\n     * <element-modifier> box_red\n     */",
+    "namespace": "component",
+    "type": "element-modifier",
+    "variation": "base-box_red",
+    "fullName": "component/base-box_red",
+    "sourceName": "component",
+    "variationName": "box_red",
+    "code": "// Descendant of .component {}\n// Extension of .component-box {}\n    .component-box_red {\n        border-color: red;\n    }"
+  },
+  {
+    "filePath": "./test/fixtures/styles/objects/component.less",
+    "length": 91,
+    "comment": "/**\n * <modifier> underlined\n */",
+    "namespace": "component",
+    "type": "modifier",
+    "variation": "underlined",
+    "fullName": "component/underlined",
+    "sourceName": "component",
+    "variationName": "underlined",
+    "code": "// Extension of .component {}\n.component_underlined {\n    text-decoration: underline;\n}"
+  }
+]

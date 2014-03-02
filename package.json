@@ -1,0 +1,40 @@
+{
+  "name": "ui-lab",
+  "version": "0.1.0",
+  "title": "UI Lab",
+  "description": "A Pattern-Driven UI Development Lab.",
+  "author": {
+    "name": "Amsul",
+    "email": "reach@amsul.ca",
+    "url": "http://amsul.ca"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://amsul.ca/MIT"
+    }
+  ],
+  "main": "ui-lab.js",
+  "homepage": "https://github.com/amsul/ui-lab",
+  "docs": "",
+  "demo": "",
+  "bugs": "https://github.com/amsul/ui-lab/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amsul/ui-lab.git"
+  },
+  "keywords": [
+    "ui",
+    "lab",
+    "pattern",
+    "library"
+  ],
+  "test": "mocha",
+  "dependencies": {
+    "lodash": "~2.4.1",
+    "should": "~3.1.2",
+    "glob": "~3.2.8",
+    "iconv-lite": "~0.2.11",
+    "colors": "~0.6.2"
+  }
+}
