@@ -1,0 +1,22 @@
+[{
+    "filePath": "./patterns/styles/objects/banner.less",
+    "componentType": "block",
+    "componentName": "banner",
+    "componentDescription": "This is some description for the module",
+    "demoLanguage": "html",
+    "demoContent": "\n    <div class=banner />\n    ",
+    "code": ".banner {}\n\n    /* some comment */\n    .banner-else {}\n\n\n",
+    "codeAfter": "/*------------------------------------*\\\n    <modifier> new\n\\*------------------------------------*/\n.banner_new {}",
+    "length": 246
+},
+{
+  "filePath": "./patterns/styles/objects/banner.less",
+  "componentType": "modifier",
+  "componentName": "new",
+  "componentDescription": "",
+  "demoLanguage": null,
+  "demoContent": null,
+  "code": ".banner_new {}",
+  "codeAfter": "",
+  "length": 114
+}]

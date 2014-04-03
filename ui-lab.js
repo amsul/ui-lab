@@ -14,495 +14,601 @@ var iconv = require('iconv-lite')
 require('colors')
 
 
-
-var CACHE_NAMES = {}
-var CACHE_PATHS = {}
-var MODE = 'debug'
-var DEFAULTS = {
-    markups: {
-        demos: {
-            src: null,
-            buildFromPath: true
-        }
-    },
-    styles: {
-        variables: {
-            src: null,
-            noNameCascades: true,
-            allow: ['variables', 'functions', 'group'],
-            namespace: {
-                variables: 'base',
-                functions: 'base'
-            },
-            manipulate: {
-                variables: function(declaration) {
-                    if ( declaration.code && declaration.demo ) {
-                        declaration.demo = interpolateVariables(declaration.code, declaration.demo)
-                    }
-                    else {
-                        declaration.code = ''
-                        declaration.demo = []
-                    }
-                },
-                group: function(declaration) {
-                    if ( declaration.code && declaration.demo ) {
-                        declaration.demo = interpolateVariables(declaration.code, declaration.demo)
-                    }
-                }
-            }
-        },
-        helpers: {
-            src: null,
-            allow: ['helper'],
-            useFilename: true
-        },
-        objects: {
-            src: null,
-            allow: ['block', 'modifier', 'element', 'element-modifier'],
-            namespace: {
-                block: 'base',
-                modifier: true
-            },
-            manipulate: {
-                modifier: function(declaration) {
-                    var comment = '// Extension of .' + declaration.sourceName + ' {}\n'
-                    declaration.code = comment + declaration.code
-                },
-                'element': function(declaration) {
-                    var comment,
-                        parentName = declaration.namespace
-                    if ( declaration.sourceName != parentName ) {
-                        parentName = declaration.sourceName + '_' + parentName
-                    }
-                    comment = '// Descendant of .' + parentName + ' {}\n'
-                    declaration.code = comment + declaration.code
-                },
-                'element-modifier': function(declaration) {
-                    var comment,
-                        sourceName = declaration.sourceName,
-                        parentName = declaration.namespace,
-                        extensionName = sourceName + '-' + declaration.variationName.split('_')[0]
-                    if ( sourceName != parentName ) {
-                        parentName = sourceName + '_' + parentName
-                    }
-                    comment = '// Descendant of .' + parentName + ' {}\n' +
-                        '// Extension of .' + extensionName + ' {}\n'
-                    declaration.code = comment + declaration.code
-                }
-            }
-        }
-    },
-    scripts: {
-        widgets: {
-            src: null,
-            allow: ['widget'],
-            okWithout: true
-        }
-    }
-}
-
-
-
-module.exports = {
-    getDeclarations: getDeclarations,
-    // validatePatterns: validatePatterns,
-    initiate: initiate,
-    getDefaults: function() {
-        return _.merge({}, DEFAULTS)
-    },
-    setMode: function(mode) {
-        MODE = mode
-    }
-}
-
-
-
-function log(msg) {
-    if (MODE == 'debug') process.stdout.write(msg)
-}
-function logLn(msg) {
-    if (MODE == 'debug') log(msg + '\n')
-}
-function logThrow(msg) {
-    logLn('')
-    throw new ReferenceError(msg)
-}
-
-
-
-_.mixin({
-    capitalize: function(word) {
-        return word[0].toUpperCase() + word.slice(1)
-    },
-    capitalizeSplit: function(string) {
-        return string.split('').map(function(letter) {
-            return letter.match(/[A-Z]/) ? ' ' + letter : letter
-        }).join('').split(/-|_/).map(_.capitalize).join(' ')
-    }
-})
-
-
-
-function initiate(options) {
-
-    CACHE_NAMES = {}
-    CACHE_PATHS = {}
-
-    var filePaths
-    var targetOptions
-    var objectsData = {}
-    var variablesData = {}
-
-    if ( !_.isPlainObject(options) ) {
-        options = {}
-    }
-
-    options = _.merge({}, DEFAULTS, options)
-
-    // Start with the markup so it’s sorted.
-    log('Generating ' + 'markups.demos '.cyan)
-    targetOptions = options.markups.demos
-    filePaths = glob.sync(targetOptions.src)
-    if (!filePaths.length) {
-        logThrow('No markups for demos found in ' + targetOptions.src)
-    }
-    filePaths.forEach(function(filePath) {
-        var declaration = getDeclarations(filePath, targetOptions),
-            namespace = declaration.namespace,
-            variation = declaration.variation
-        objectsData[namespace] = objectsData[namespace] || {}
-        objectsData[namespace].variations = objectsData[namespace].variations || {}
-        objectsData[namespace].variations[variation] = objectsData[namespace].variations[variation] || {}
-        objectsData[namespace].variations[variation].markup = declaration
-    })
-    logLn('OK'.green)
-
-    // Move on to the styles helpers.
-    log('Generating ' + 'styles.helpers '.cyan)
-    targetOptions = options.styles.helpers
-    filePaths = glob.sync(targetOptions.src)
-    filePaths.forEach(function(filePath) {
-        var namespace,
-            declarations = getDeclarations(filePath, targetOptions)
-        declarations.forEach(function(declaration, index) {
-            var type = declaration.type,
-                variation = declaration.variation
-            if ( type != 'helper' ) {
-                logThrow('The helper file at ' + filePath +
-                    ' can only have "<helper>" declarations.')
-            }
-            if ( index === 0 ) {
-                namespace = declaration.namespace
-            }
-            objectsData[namespace] = objectsData[namespace] || {}
-            objectsData[namespace].title = objectsData[namespace].title || _.capitalizeSplit(namespace)
-            objectsData[namespace].variations = objectsData[namespace].variations || {}
-            objectsData[namespace].variations[variation] = objectsData[namespace].variations[variation] || {}
-            objectsData[namespace].variations[variation].title = _.capitalizeSplit(variation)
-            objectsData[namespace].variations[variation].slug = declaration.fullName
-            objectsData[namespace].variations[variation].styles = declaration
-        })
-    })
-    logLn('OK'.green)
-
-
-    // Next on to the styles objects.
-    log('Generating ' + 'styles.objects '.cyan)
-    targetOptions = options.styles.objects
-    filePaths = glob.sync(targetOptions.src)
-    filePaths.forEach(function(filePath) {
-        var namespace,
-            declarations = getDeclarations(filePath, targetOptions)
-        declarations.forEach(function(declaration, index) {
-            var type = declaration.type,
-                variation = declaration.variation
-            if ( index === 0 ) {
-                if ( type != 'block' ) {
-                    logThrow('The first declaration within ' +
-                        filePath + ' must be a "<block>" declaration.')
-                }
-                namespace = declaration.namespace
-            }
-            objectsData[namespace] = objectsData[namespace] || {}
-            objectsData[namespace].title = objectsData[namespace].title || _.capitalizeSplit(namespace)
-            objectsData[namespace].variations = objectsData[namespace].variations || {}
-            objectsData[namespace].variations[variation] = objectsData[namespace].variations[variation] || {}
-            objectsData[namespace].variations[variation].title = _.capitalizeSplit(variation)
-            objectsData[namespace].variations[variation].slug = declaration.fullName
-            objectsData[namespace].variations[variation].styles = declaration
-        })
-    })
-    logLn('OK'.green)
-
-
-    // Next on to the scripts.
-    log('Generating ' + 'scripts.widgets '.cyan)
-    targetOptions = options.scripts.widgets
-    filePaths = glob.sync(targetOptions.src)
-    filePaths.forEach(function(filePath) {
-        var declarations = getDeclarations(filePath, targetOptions)
-        declarations.forEach(function(declaration) {
-            var namespace = declaration.namespace
-            objectsData[namespace] = objectsData[namespace] || {}
-            objectsData[namespace].apis = declaration
-        })
-    })
-    logLn('OK'.green)
-
-
-    // Make sure the information we have so far it complete.
-    log('Validating ' + 'demos, helpers, and objects '.cyan)
-    validateObjectPatterns(objectsData)
-    logLn('OK'.green)
-
-
-    // Finally, do the styles variables.
-    log('Generating ' + 'styles.variables '.cyan)
-    targetOptions = options.styles.variables
-    filePaths = glob.sync(targetOptions.src)
-    filePaths.forEach(function(filePath) {
-        var namespace,
-            declarations = getDeclarations(filePath, targetOptions)
-        declarations.forEach(function(declaration/*, index*/) {
-            var type = declaration.type,
-                variation = declaration.variation
-            if ( type.match(/^(variables|functions)$/) ) {
-                namespace = declaration.namespace
-            }
-            variablesData[namespace] = variablesData[namespace] || {}
-            variablesData[namespace].title = variablesData[namespace].title || _.capitalizeSplit(namespace)
-            variablesData[namespace].variations = variablesData[namespace].variations || {}
-            variablesData[namespace].variations[variation] = variablesData[namespace].variations[variation] || {}
-            variablesData[namespace].variations[variation].isDemoless = declaration.code.trim().length && declaration.demo ? undefined : true
-            variablesData[namespace].variations[variation].title = _.capitalizeSplit(variation)
-            variablesData[namespace].variations[variation].slug = declaration.fullName
-            variablesData[namespace].variations[variation].variables = declaration
-        })
-    })
-    logLn('OK'.green)
-
-
-    // Notify the lab generation.
-    logLn('>>'.green + ' Lab generated.')
-
-
-    // Construct and return the final objects composition.
-    return {
-        variables: {
-            title: 'Variables &amp; Mixins',
-            slug: 'variables-mixins',
-            declarations: variablesData
-        },
-        objects: {
-            title: 'Objects &amp; Helpers',
-            slug: 'objects-helpers',
-            declarations: objectsData
-        }
-    }
-}
-
-
-
+/**
+ * Synchronously read a file.
+ */
 function readFileSync(filePath) {
     var buffer = fs.readFileSync(filePath)
     return iconv.decode(buffer, 'utf8')
 }
 
 
+/**
+ * Get declarations from a path.
+ */
+function getPathDeclarations(globPattern) {
 
-function getDeclarations(filePath, options) {
-
+    var filePaths = glob.sync(globPattern)
     var declarations = []
 
-    options = _.isPlainObject(options) ? options : {}
-
-    if ( options.buildFromPath ) {
-        return buildDeclarationFromPath(filePath)
-    }
-
-    var contentMatch, declaration,
-        regex = /(\ *)(\/\*[\s\S]*?\*\/)([\s\S]*)/,
-        fileContents = readFileSync(filePath)
-
-    while /*if*/ ( (contentMatch = fileContents.match(regex)) ) { // NOTE: assignment
-        declaration = buildDeclarationFromMatch(contentMatch, filePath, options)
-        fileContents = fileContents.slice(declaration.length)
-        if ( declaration.fullName && declaration.fullName in CACHE_PATHS ) {
-            logThrow('The declaration "' + declaration.fullName + '" ' +
-                'made in ' + filePath + ' has already been declared in ' +
-                CACHE_PATHS[declaration.fullName] + '.')
+    filePaths.forEach(function(filePath) {
+        var pathSplit = filePath.split('/')
+        var pattern = pathSplit[pathSplit.length - 2].replace(/^\[\d+\]/, '')
+        var variation = pathSplit[pathSplit.length - 1].replace(/^\[\d+\]/, '').replace(/\.\w+?$/, '')
+        var declaration = {
+            filePath: filePath,
+            pattern: pattern,
+            variation: variation,
+            code: readFileSync(filePath)
         }
-        CACHE_PATHS[declaration.fullName] = filePath
-        if ( declaration.type ) {
+        declarations.push(declaration)
+    })
+
+    return declarations
+}
+
+
+/**
+ * Get declarations from a file.
+ */
+function getFileDeclarations(filePath, options) {
+
+    var fileContents = readFileSync(filePath)
+    var declarationRegExp = /(\ *)(\/\*[\s\S]*?\*\/)\n*([\s\S]*)/
+    var declarations = []
+    var match
+
+    options = options || {}
+
+    while /*if*/ ( (match = fileContents.match(declarationRegExp)) ) { // NOTE: assignment
+        var declaration = parseDeclarationFromMatch(match, filePath);
+        fileContents = fileContents.slice(declaration.length)
+        verifyDeclarationContext(declaration, declarations[declarations.length-1], filePath, options)
+        if ( verifyDeclarationValidity(declaration, options) ) {
             declarations.push(declaration)
         }
     }
 
-    if ( !declarations.length && !options.okWithout ) {
-        logThrow('No declarations found within ' + filePath + '.')
+    if ( !declarations.length ) {
+        warn('No declarations found in "' + filePath + '".')
     }
 
     return declarations
 }
 
 
+/**
+ * Build a declaration object from a content match.
+ */
+function parseDeclarationFromMatch(match, filePath) {
 
-function buildDeclarationFromPath(filePath) {
-    var pathSplit = filePath.split('/'),
-        namespace = pathSplit[pathSplit.length - 2].replace(/^\[\d+\]/, ''),
-        variation = pathSplit[pathSplit.length - 1].replace(/^\[\d+\]/, '').replace(/\.html$/, ''),
-        fullName = namespace + '/' + variation,
-        code = readFileSync(filePath)
-    var declaration = {
-        filePath: filePath,
-        namespace: namespace,
-        variation: variation,
-        fullName: fullName,
-        code: code
-    }
-    // console.log(declaration)
-    return declaration
-}
+    // Match the base of the declaration.
+    var declarationIndent = match[1]
+    var declarationComment = match[2]
+    var declarationContent = match[3]
 
+    // Match the component of the declaration.
+    var componentMatch = declarationComment.match(/<([\w-_]+)>\s*?([\w-_]+)(?:\s*([\s\S]*?)(?=\n|```))?/)
+    var componentType = componentMatch && componentMatch[1] || ''
+    var componentName = componentMatch && componentMatch[2] || ''
+    var componentDescription = componentMatch && componentMatch[3] || ''
 
+    // Match the demo of the declaration.
+    var demoMatch = declarationComment.match(/```(\w+)?([\s\S]*?)```/)
+    var demoLanguage = demoMatch && demoMatch[1]
+    var demoContent = demoMatch && demoMatch[2]
 
-function buildDeclarationFromMatch(contentMatch, filePath, options) {
+    // Match the code of the declaration.
+    var declarationCode = ''
+    var declarationCodeAfter = ''
+    var codeMatch
+    var codeFirstChunk
+    var codeFirstComment
+    var codeTrailingChunk
 
-    var fullName, namespace, namespaceType, folderName, sourceName,
-        filePathSplit = filePath.split('/'),
-        indent = contentMatch[1],
-        comment = contentMatch[2],
-        contentLeft = contentMatch[3],
-        statement = comment.match(/<([\w-_]+)>\s*?([\w-_]+)/),
-        type = statement && statement[1],
-        variation = statement && statement[2],
-        demo = comment.match(/```([\s\S]*?)```/),
-        contentLeftMatch = contentLeft && contentLeft.match(/([\s\S]*?)\/\*[\s\S]*?\*\//),
-        code = contentLeftMatch ? contentLeftMatch[1] : contentLeft,
-        nextIndent = code && code.match(/\ *$/)
+    // var i = 0
 
-    // If it's just a regular comment block, simply return the length.
-    if ( !type && !variation ) {
-        return {
-            length: indent.length + comment.length
-        }
-    }
+    while (
+        // i < 30 &&
+        ( codeMatch = declarationContent.match(/([\s\S]*?)(\/\*[\s\S]*?\*\/)([\s\S]*)/) )
+    ) {
 
-    // Make sure we have usable information.
-    if ( !type || !variation ) {
-        logThrow('Invalid declaration found in ' + filePath + ':\n' + comment + '\n')
-    }
-    if ( !options.allow || options.allow.indexOf(type) < 0 ) {
-        logThrow('Unrecognized declaration ' +
-            '"<' + type + '> ' + variation + '" found in ' + filePath + '. ' +
-            ( options.allow ?
-                'The declaration type must be one of the following: ' +
-                '"<' + options.allow.join('>", "<') + '>".' :
-                'There are no known allowed declaration types provided.'
-            )
-        )
-    }
+        // i += 1
 
-    // Update if a demo was matched within the comment.
-    if ( demo ) {
-        demo = demo[1]
-    }
+        var parsedLength = 0
 
-    // If the code ends with an indentation,
-    // remove it from the code block.
-    if ( nextIndent && nextIndent[0].length ) {
-        code = code.slice(0, -nextIndent[0].length)
-    }
+        codeFirstChunk = codeMatch[1]
+        codeFirstComment = codeMatch[2]
+        codeTrailingChunk = codeMatch[3]
 
-    // Default the namespace to the variation.
-    namespace = variation
+        // Update the declaration code with the first chunk.
+        declarationCode += codeFirstChunk
+        parsedLength += codeFirstChunk.length
 
-    // Check if we need to namespace the full name and demo.
-    if ( options && (options.namespace || options.useFilename) ) {
-
-        namespaceType = options.namespace && options.namespace[type]
-
-        // When a namespacing is there, store it in the cache.
-        if ( namespaceType ) {
-            CACHE_NAMES[filePath] = CACHE_NAMES[filePath] || {}
-            if ( typeof namespaceType == 'string' ) {
-                CACHE_NAMES[filePath].namespace = fullName = namespaceType
-            }
-            else {
-                CACHE_NAMES[filePath].sourceName = CACHE_NAMES[filePath].sourceName || CACHE_NAMES[filePath].variation
-                CACHE_NAMES[filePath].namespace = variation
-                namespace = CACHE_NAMES[filePath].variation
-            }
-            CACHE_NAMES[filePath].demo = demo
-            CACHE_NAMES[filePath].variation = variation
+        // If the first comment has a declaration,
+        // add that to the code after.
+        if ( codeFirstComment.match(/<[\w-_]*>/) ) {
+            declarationCodeAfter = codeFirstComment + codeTrailingChunk
+            parsedLength += declarationCodeAfter.length
         }
 
-        // Otherwise check the file path's cache.
-        else if ( filePath in CACHE_NAMES ) {
-            namespace = CACHE_NAMES[filePath].variation
-            fullName = (options.noNameCascades ? '' : CACHE_NAMES[filePath].namespace + '-') + variation
-            demo = demo || CACHE_NAMES[filePath].demo
-        }
-
-        // If there's nothing in the cache, check if there
-        // should be namespacing using the file name.
+        // Otherwise add the first comment to the actual code.
         else {
-            folderName = filePathSplit[filePathSplit.length - 2]
-            if ( options.useFilename ) {
-                namespace = filePathSplit[filePathSplit.length - 1].replace(/\.[\s\S]+$/, '')
-            }
-            else {
-                logThrow('No "base sectioning" declaration found for ' +
-                    '"<' + type + '> ' + variation + '" in ' + filePath + '.')
-            }
+            declarationCode += codeFirstComment
+            parsedLength += codeFirstComment.length
         }
 
-        sourceName = CACHE_NAMES[filePath] && CACHE_NAMES[filePath].sourceName || namespace
+        // Reduce the length of the declaration’s content.
+        declarationContent = declarationContent.slice(parsedLength)
+
     }
 
-    // Construct the actual declaration object.
+    // If there’s no declaration code, fallback to the content.
+    if ( !declarationCode ) {
+        declarationCode = declarationContent
+    }
+
+    // Create and return the declaration object.
     var declaration = {
         filePath: filePath,
-        length: indent.length + comment.length + code.length,
-        comment: comment,
-        namespace: namespace || fullName,
-        type: type,
-        variation: fullName || variation,
-        fullName: (namespace ? namespace + '/' : '') + (fullName || variation),
-        sourceName: sourceName || 'FIXME',
-        variationName: variation,
-        demo: removeExtraSpacing(demo, { unindent: true }),
-        code: removeExtraSpacing(code)
+        componentType: componentType,
+        componentName: componentName,
+        componentDescription: componentDescription,
+        demoLanguage: demoLanguage,
+        demoContent: demoContent,
+        code: declarationCode,
+        codeAfter: declarationCodeAfter,
+        length: declarationComment.length + declarationCode.length
     }
-
-    // Update the declaration if needed.
-    if ( options.manipulate && options.manipulate[type] ) {
-        options.manipulate[type](declaration)
-    }
-
-    // console.log(declaration)
 
     return declaration
 }
 
 
+/**
+ * Verify if a declaration is within the right context.
+ */
+function verifyDeclarationContext(declaration, prevDeclaration, filePath, options) {
 
-function removeExtraSpacing(content, options) {
-    if ( !content ) return
-    var indentRegEx = /^\s*?(\ *?)[^\s]/,
-        contentRegEx = /^\s*([\s\S]+?)(\s*)$/,
-        indentation = content.split(indentRegEx)[1] || '',
-        snippet = content.split(contentRegEx)[1] || ''
-    snippet = snippet.match(/[^\s]/) ? snippet : ''
-    content = indentation + snippet
-    if ( options && options.unindent ) {
-        content = content.replace( new RegExp('^' + indentation, 'gm'), '' )
+    var currentType = declaration.componentType
+    var previousType = prevDeclaration && prevDeclaration.componentType
+    var context = options && options.context && options.context[currentType]
+
+    if ( !previousType && context && context.length ) {
+        warn('The "<' + currentType + '>" declaration has no context ' +
+            'in the file "' + filePath + '" - but it must be declared ' +
+            'after one of the following: "<' + context.join('>", "<') + '>".')
     }
-    return content
+    if ( !previousType && 'first' in options && options.first !== currentType ) {
+        warn('The "<' + options.first + '>" declaration must be ' +
+            'the first declaration in the file "' + filePath + '"' +
+            (currentType ?
+                ' - but "<' + currentType + '>" appears first instead' :
+                '' ) +
+            '.')
+    }
+    if ( previousType && context && context.indexOf(previousType) < 0 ) {
+        warn('The "<' + currentType + '>" declaration appears after ' +
+            '"<' + previousType + '>" in the file "' + filePath + '" - ' +
+            'but it must be declared after one of the following: ' +
+            '"<' + context.join('>", "<') + '>".')
+    }
+
 }
 
 
+/**
+ * Verify if a declaration is valid.
+ */
+function verifyDeclarationValidity(declaration, options) {
 
+    var isOkay = true
+    var checks = [
+        function isComponentDeclaration() {
+            return declaration.componentType && declaration.componentName
+        },
+        function isComponentAllowed() {
+            var type = declaration.componentType
+            var variation = declaration.componentName
+            var isAllowed = options.allow &&
+                options.allow.indexOf(type) > -1
+            if ( !isAllowed ) {
+                warn('Unrecognized declaration ' +
+                    '"<' + type + '> ' + variation + '" found in "' + declaration.filePath + '". ' +
+                    ( options.allow ?
+                        'The declaration type must be one of the following: ' +
+                        '"<' + options.allow.join('>", "<') + '>".' :
+                        'There are no known allowed declaration types provided.'
+                    )
+                )
+            }
+            return isAllowed
+        }
+    ]
+
+    for ( var i = 0; i < checks.length; i += 1 ) {
+        isOkay = !!checks[i]()
+        if ( !isOkay ) {
+            break
+        }
+    }
+
+    return isOkay
+}
+
+
+/**
+ * Build patterns found within the markups’ glob pattern.
+ */
+function buildPatterns(options) {
+
+    var patternsRegistry = {
+        variables: [],
+        helpers: [],
+        objects: []
+    }
+
+    if ( options.variables ) {
+        buildPatternsForVariables(patternsRegistry.variables, options)
+    }
+
+    if ( options.helpers ) {
+        buildPatternsForHelpers(patternsRegistry.helpers, options)
+    }
+
+    if ( options.objects ) {
+        buildPatternsForObjects(patternsRegistry.objects, options)
+    }
+
+    return patternsRegistry
+}
+
+
+/**
+ * Build patterns for variables using the source and demos.
+ */
+function buildPatternsForVariables(variablesPatternsRegistry, options) {
+
+    var cachedNames = {}
+    var cachedPatterns = {}
+
+    logSilent('Generating the variables’ styles and markups... ')
+
+    var variableStylesPaths = glob.sync(options.variables)
+    var latestPatternName
+    variableStylesPaths.forEach(function(variableStylesPath) {
+        var declarations = getFileDeclarations(variableStylesPath, {
+            allow: ['variables', 'group']
+        })
+        var name
+        var demo
+        declarations.forEach(function(declaration, index) {
+            // if(index>0)return
+            var variationName = declaration.componentName
+            var description = declaration.componentDescription
+            if ( declaration.componentType == 'variables' ) {
+                name = variationName
+                variationName = 'base'
+                description = 'The base variables'
+                demo = cleanWrappingWhitespace(declaration.demoContent)
+            }
+            var variablesPattern
+            if ( name in cachedPatterns ) {
+                variablesPattern = cachedPatterns[name]
+            }
+            else {
+                variablesPattern = cachedPatterns[name] = {
+                    name: name,
+                    title: capitalizeSplit(name),
+                    description: declaration.componentDescription || '',
+                    variations: []
+                }
+            }
+            var fullName = name + '/' + variationName
+            if ( fullName in cachedNames ) {
+                warn('Styles for the pattern "' + fullName + '" already exist.')
+            }
+            cachedNames[fullName] = true
+            if ( !declaration.code ) return
+            var variablesPatternVariation = {
+                name: variationName,
+                title: capitalizeSplit(variationName),
+                description: description || '',
+                demos: interpolateVariables(declaration.code, demo),
+                source: {
+                    styles: {
+                        path: declaration.filePath,
+                        code: cleanWrappingWhitespace(declaration.code),
+                    },
+                    markup: {
+                        path: declaration.filePath,
+                        code: cleanWrappingWhitespace(demo)
+                    }
+                }
+            }
+            variablesPattern.variations.push(variablesPatternVariation)
+            if ( latestPatternName !== name ) {
+                latestPatternName = name
+                variablesPatternsRegistry.push(cachedPatterns[name])
+            }
+        })
+    })
+
+    logSilent('OK\n')
+
+}
+
+
+/**
+ * Build patterns for helpers using styles and markups.
+ */
+function buildPatternsForHelpers(helpersPatternsRegistry, options) {
+
+    var cachedVariations = {}
+    var cachedPatterns = {}
+    var cachedCompletedVariations = {}
+
+    logSilent('Generating the helpers’ styles... ')
+
+    var helpersStylesPaths = glob.sync(options.helpers.styles)
+    helpersStylesPaths.forEach(function(helpersStylesPath) {
+        var declarations = getFileDeclarations(helpersStylesPath, {
+            allow: ['helper']
+        })
+        var pathDeclaration = getPathDeclarations(helpersStylesPath)
+        var name = pathDeclaration[0].variation
+        declarations.forEach(function(declaration, index) {
+            // if(index>0)return
+            var variationName = declaration.componentName
+            var description = declaration.componentDescription
+            var helperPattern
+            if ( name in cachedPatterns ) {
+                helperPattern = cachedPatterns[name]
+            }
+            else {
+                helperPattern = cachedPatterns[name] = {
+                    name: name,
+                    title: capitalizeSplit(name),
+                    description: declaration.componentDescription || '',
+                    variations: []
+                }
+            }
+            var fullName = name + '/' + variationName
+            if ( fullName in cachedVariations ) {
+                warn('Styles for the pattern "' + fullName + '" already exist.')
+            }
+            var helperPatternVariation = {
+                name: variationName,
+                title: capitalizeSplit(variationName),
+                description: description || '',
+                source: {
+                    styles: {
+                        path: declaration.filePath,
+                        component: declaration.componentType,
+                        code: cleanWrappingWhitespace(declaration.code)
+                    }
+                }
+            }
+            cachedVariations[fullName] = helperPatternVariation
+        })
+    })
+
+    logSilent('OK\n')
+
+    logSilent('Generating the helpers’ markups... ')
+
+    var helpersDeclarations = getPathDeclarations(options.helpers.markups)
+    var latestHelperName
+    helpersDeclarations.forEach(function(helpersDeclaration, index) {
+        // if(index)return
+        var name = helpersDeclaration.pattern
+        var variationName = helpersDeclaration.variation
+        var fullName = name + '/' + variationName
+        if ( !(fullName in cachedVariations) ) {
+            warn('Styles for the pattern "' + fullName + '" are not defined.')
+        }
+        cachedCompletedVariations[fullName] = true
+        var patternVariation = cachedVariations[fullName]
+        patternVariation.demo = helpersDeclaration.code
+        patternVariation.source.markup = {
+            path: helpersDeclaration.filePath,
+            code: helpersDeclaration.code
+        }
+        cachedPatterns[name].variations.push(patternVariation)
+        if ( latestHelperName !== name ) {
+            latestHelperName = name
+            helpersPatternsRegistry.push(cachedPatterns[name])
+        }
+    })
+
+    logSilent('OK\n')
+
+    // Verify that all styles have been paired with markups.
+    logSilent('Verifying helpers are all matched... ')
+    for ( var fullName in cachedVariations ) {
+        if ( !(fullName in cachedCompletedVariations) ) {
+            warn('Styles for the pattern "' + fullName + '" have no markup.')
+        }
+    }
+    logSilent('OK\n')
+
+}
+
+
+/**
+ * Build patterns for objects using styles, markups, and scripts.
+ */
+function buildPatternsForObjects(objectsPatternsRegistry, options) {
+
+    var cachedNames = {}
+    var cachedVariations = {}
+    var cachedCompletedVariations = {}
+    var cachedPatterns = {}
+
+    logSilent('Generating the objects’ styles... ')
+
+    var objectsStylesPaths = glob.sync(options.objects.styles)
+    objectsStylesPaths.forEach(function(objectsStylesPath,index) {
+        // if(index>0)return
+        var declarations = getFileDeclarations(objectsStylesPath, {
+            allow: ['block', 'element', 'modifier', 'element-modifier'],
+            first: 'block',
+            context: {
+                'element': ['block', 'modifier'],
+                'modifier': ['block', 'element', 'element-modifier'],
+                'element-modifier': ['block', 'element', 'modifier']
+            }
+        })
+        var name
+        var namespace
+        declarations.forEach(function(declaration, index) {
+            // if(index>0)return
+            var variationName = declaration.componentName
+            var description = declaration.componentDescription
+            if ( declaration.componentType == 'block' ) {
+                if ( !index ) {
+                    name = variationName
+                    description = 'The base object'
+                }
+                namespace = variationName = 'base'
+            }
+            else if ( declaration.componentType == 'modifier' ) {
+                namespace = variationName
+            }
+            else {
+                variationName = namespace + '-' + variationName
+            }
+            var objectPattern
+            if ( name in cachedPatterns ) {
+                objectPattern = cachedPatterns[name]
+            }
+            else {
+                objectPattern = cachedPatterns[name] = {
+                    name: name,
+                    title: capitalizeSplit(name),
+                    description: declaration.componentDescription || '',
+                    variations: [],
+                    api: {}
+                }
+            }
+            var fullName = name + '/' + variationName
+            if ( variationName in cachedVariations ) {
+                warn('Styles for the pattern "' + fullName + '" already exist.')
+            }
+            cachedNames[name] = true
+            var objectPatternVariation = {
+                name: variationName,
+                title: capitalizeSplit(variationName),
+                description: description || '',
+                source: {
+                    styles: {
+                        path: declaration.filePath,
+                        component: declaration.componentType,
+                        code: cleanWrappingWhitespace(declaration.code)
+                    }
+                }
+            }
+            cachedVariations[fullName] = objectPatternVariation
+        })
+    })
+
+    logSilent('OK\n')
+
+    logSilent('Generating the objects’ scripts... ')
+
+    var objectsScriptsPaths = glob.sync(options.objects.scripts)
+    objectsScriptsPaths.forEach(function(objectsScriptsPath) {
+        var declarations = getFileDeclarations(objectsScriptsPath, {
+            allow: ['api']
+        })
+        declarations.forEach(function(declaration) {
+            var name = declaration.componentName
+            if ( !(name in cachedNames) ) {
+                warn('Styles for the pattern "' + name + '" are not defined.')
+            }
+            cachedNames[name] = 'done'
+            var patternRegistry = cachedPatterns[name]
+            patternRegistry.api.markup = {
+                filePath: declaration.filePath,
+                description: declaration.componentDescription || '',
+                code: cleanWrappingWhitespace(declaration.code)
+            }
+        })
+    })
+
+    logSilent('OK\n')
+
+    logSilent('Generating the objects’ markups... ')
+
+    var objectsDeclarations = getPathDeclarations(options.objects.markups)
+    var latestObjectName
+    objectsDeclarations.forEach(function(objectsDeclaration, index) {
+        // if(index)return
+        var name = objectsDeclaration.pattern
+        var variationName = objectsDeclaration.variation
+        var fullName = name + '/' + variationName
+        if ( !(fullName in cachedVariations) ) {
+            warn('Styles for the pattern "' + fullName + '" are not defined.')
+        }
+        cachedCompletedVariations[fullName] = true
+        var patternVariation = cachedVariations[fullName]
+        patternVariation.demo = objectsDeclaration.code
+        patternVariation.source.markup = {
+            path: objectsDeclaration.filePath,
+            code: objectsDeclaration.code
+        }
+        cachedPatterns[name].variations.push(patternVariation)
+        if ( latestObjectName !== name ) {
+            latestObjectName = name
+            objectsPatternsRegistry.push(cachedPatterns[name])
+        }
+    })
+
+    logSilent('OK\n')
+
+
+    // Verify that all styles have been paired with markups.
+    logSilent('Verifying objects are all matched... ')
+    for ( var fullName in cachedVariations ) {
+        if ( !(fullName in cachedCompletedVariations) ) {
+            warn('Styles for the pattern "' + fullName + '" have no markup.')
+        }
+    }
+    logSilent('OK\n')
+
+}
+
+
+/**
+ * Helper functions to title case a string.
+ */
+function capitalize(word) {
+    return word ?
+        word[0].toUpperCase() + word.slice(1) :
+        ''
+}
+function capitalizeSplit(string) {
+    return (string || '').split('').
+        map(function(letter) {
+            return letter.match(/[A-Z]/) ? ' ' + letter : letter
+        }).
+        join('').split(/-|_/).
+        map(capitalize).join(' ')
+}
+
+
+/**
+ * Helper function to manipulate whitespace in a string.
+ */
+function cleanWrappingWhitespace(string) {
+    var match = string && string.match(/([\n\ ]+)?([\s\S]+?)([\n\ ]*?$)/)
+    return match && match[2] || ''
+}
+
+
+/**
+ * Helper function to interpolate variables into a demo.
+ */
 function interpolateVariables(code, demo) {
     var regex = /(@[\w-_]+)\s*?:(?:\s+)?([\s\S]*?);/g,
         matches = code.match(regex)
@@ -516,36 +622,69 @@ function interpolateVariables(code, demo) {
 }
 
 
+/**
+ * Environment variables.
+ */
+var MODE = 'debug'
 
-// Make sure dependencies are all there.
-function validateObjectPatterns(objectsData) {
-    for ( var pattern in objectsData ) {
-        var patternObj = objectsData[pattern]
-        for ( var variation in patternObj.variations ) {
-            var variationObj = patternObj.variations[variation]
-            if ( !('markup' in variationObj) ) {
-                logThrow('No HTML markup found for the pattern declared as "' +
-                    pattern + '/' + variation +
-                    '" in ' + variationObj.styles.filePath + '.'
-                )
-            }
-            if ( !('styles' in variationObj) ) {
-                logThrow('No LESS styles found for the pattern declared as "' +
-                    pattern + '/' + variation +
-                    '" in ' + variationObj.markup.filePath + '.'
-                )
-            }
-        }
-        if ( 'apis' in patternObj ) {
-            var apiVariation = patternObj.apis.variation
-            if ( !patternObj.variations ) {
-                logThrow('Need both HTML markup and LESS styles for the ' +
-                    'pattern declared as "' + pattern + '/' + apiVariation +
-                    '" in ' + patternObj.apis.filePath + '.')
-            }
-            else {
-                console.log( 'TODO: `widgets`', pattern, 'variation' )
-            }
-        }
+
+/**
+ * Export the public API.
+ */
+module.exports = {
+    getFileDeclarations: getFileDeclarations,
+    getPathDeclarations: getPathDeclarations,
+    buildPatterns: buildPatterns,
+    setMode: function(mode) {
+        MODE = mode
     }
 }
+
+
+/**
+ * Log warnings to the console based on the mode.
+ */
+function warn(msg) {
+    if ( MODE == 'debug' ) {
+        log(msg.yellow)
+    }
+    else {
+        throw new ReferenceError(msg)
+    }
+}
+function log(msg) {
+    process.stdout.write(msg)
+}
+function logSilent(msg) {
+    if ( MODE == 'debug' || MODE == 'test' ) {
+        log(msg.match(/^OK(\n|$)/) ? msg.green : msg.cyan)
+    }
+}
+
+
+
+// function initiate(options) {
+
+//     // Move on to the styles helpers.
+//     log('Generating ' + 'styles.helpers '.cyan)
+//     targetOptions = options.styles.helpers
+//     filePaths = glob.sync(targetOptions.src)
+//     logLn('OK'.green)
+
+// }
+
+
+
+// function removeExtraSpacing(content, options) {
+//     if ( !content ) return
+//     var indentRegEx = /^\s*?(\ *?)[^\s]/,
+//         contentRegEx = /^\s*([\s\S]+?)(\s*)$/,
+//         indentation = content.split(indentRegEx)[1] || '',
+//         snippet = content.split(contentRegEx)[1] || ''
+//     snippet = snippet.match(/[^\s]/) ? snippet : ''
+//     content = indentation + snippet
+//     if ( options && options.unindent ) {
+//         content = content.replace( new RegExp('^' + indentation, 'gm'), '' )
+//     }
+//     return content
+// }

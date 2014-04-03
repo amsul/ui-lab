@@ -1,0 +1,153 @@
+{
+  "variables": [],
+  "helpers": [],
+  "objects": [
+    {
+      "name": "button",
+      "title": "Button",
+      "description": "Buttons ftw",
+      "variations": [
+        {
+          "name": "base",
+          "title": "Base",
+          "description": "The base object",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/button.less",
+              "component": "block",
+              "code": ".button {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[0]button/[0]base.html",
+              "code": "<div></div>"
+            }
+          },
+          "demo": "<div></div>"
+        },
+        {
+          "name": "base-pointer",
+          "title": "Base Pointer",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/button.less",
+              "component": "element",
+              "code": ".button-pointer {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[0]button/[1]base-pointer.html",
+              "code": "<div>pointer</div>"
+            }
+          },
+          "demo": "<div>pointer</div>"
+        },
+        {
+          "name": "base-pointer_soft",
+          "title": "Base Pointer Soft",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/button.less",
+              "component": "element-modifier",
+              "code": ".button-pointer_soft {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[0]button/[2]base-pointer_soft.html",
+              "code": "<div>point soft</div>"
+            }
+          },
+          "demo": "<div>point soft</div>"
+        },
+        {
+          "name": "large",
+          "title": "Large",
+          "description": "some description!",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/button.less",
+              "component": "modifier",
+              "code": ".button_large {}\n    .button-pointer {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[0]button/[3]large.html",
+              "code": "<div>large</div>"
+            }
+          },
+          "demo": "<div>large</div>"
+        },
+        {
+          "name": "large-pointer_soft",
+          "title": "Large Pointer Soft",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/button.less",
+              "component": "element-modifier",
+              "code": ".button-pointer_soft {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[0]button/[4]large-pointer_soft.html",
+              "code": "<div>else</div>"
+            }
+          },
+          "demo": "<div>else</div>"
+        }
+      ],
+      "api": {
+        "markup": {
+          "filePath": "./patterns/scripts/objects/api.js",
+          "description": "The button’s api through markup",
+          "code": "$('[role=button]').buttonize()"
+        }
+      }
+    },
+    {
+      "name": "banner",
+      "title": "Banner",
+      "description": "This is some description for the module",
+      "variations": [
+        {
+          "name": "base",
+          "title": "Base",
+          "description": "The base object",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/banner.less",
+              "component": "block",
+              "code": ".banner {}\n\n    /* some comment */\n    .banner-else {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[1]banner/[0]base.html",
+              "code": "<div>another base</div>"
+            }
+          },
+          "demo": "<div>another base</div>"
+        },
+        {
+          "name": "new",
+          "title": "New",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/objects/banner.less",
+              "component": "modifier",
+              "code": ".banner_new {}"
+            },
+            "markup": {
+              "path": "./patterns/markups/objects/[1]banner/[1]new.html",
+              "code": "<div>new</div>"
+            }
+          },
+          "demo": "<div>new</div>"
+        }
+      ],
+      "api": {
+        "markup": {
+          "code": "$('[role=banner]').bannerize()",
+          "description": "The banner’s api through javascript",
+          "filePath": "./patterns/scripts/objects/api.js"
+        }
+      }
+    }
+  ]
+}

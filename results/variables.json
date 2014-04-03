@@ -1,0 +1,98 @@
+{
+  "variables": [
+    {
+      "name": "colors",
+      "title": "Colors",
+      "description": "",
+      "variations": [
+        {
+          "name": "base",
+          "title": "Base",
+          "description": "The base variables",
+          "demos": [
+            "<div>#222: @color-base</div>",
+            "<div>#eee: @color-base-white</div>"
+          ],
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "@color-base: #222;\n@color-base-white: #eee;"
+            },
+            "markup": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "<div>{$2}: {$1}</div>"
+            }
+          }
+        },
+        {
+          "name": "brand",
+          "title": "Brand",
+          "description": "",
+          "demos": [
+            "<div>#472a49: @color-brand-plum</div>",
+            "<div>#07a7e2: @color-brand-blue</div>",
+            "<div>#da1621: @color-brand-red</div>"
+          ],
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "@color-brand-plum: #472a49;\n@color-brand-blue: #07a7e2;\n@color-brand-red: #da1621;"
+            },
+            "markup": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "<div>{$2}: {$1}</div>"
+            }
+          }
+        },
+        {
+          "name": "black_to_white",
+          "title": "Black To White",
+          "description": "",
+          "demos": [
+            "<div>#000: @color-black</div>",
+            "<div>#808080: @color-grey</div>",
+            "<div>#fff: @color-white</div>"
+          ],
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "@color-black: #000;\n@color-grey: #808080;\n@color-white: #fff;"
+            },
+            "markup": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "<div>{$2}: {$1}</div>"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "fonts",
+      "description": "the fonts :)",
+      "title": "Fonts",
+      "variations": [
+        {
+          "name": "all",
+          "title": "All",
+          "description": "",
+          "demos": [
+            "var @font | val sans-serif",
+            "var @font-alt | val serif"
+          ],
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "@font: sans-serif;\n@font-alt: serif;"
+            },
+            "markup": {
+              "path": "./patterns/styles/_variables.less",
+              "code": "var {$1} | val {$2}"
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "helpers": [],
+  "objects": []
+}

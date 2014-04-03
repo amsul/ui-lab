@@ -20,144 +20,205 @@ function readFileSync(filePath) {
 }
 
 
-// Set the lab up in “test” mode and get the defaults.
+// Set the lab up in “test” mode.
 uiLab.setMode('test')
-var defaults = uiLab.getDefaults()
 
 
-// Let the testing begin..
-describe('ui-lab', function() {
+describe('.getFileDeclarations()', function() {
 
+    it('Parses allowed declarations in a file', function() {
 
-    describe('.getDeclarations', function() {
+        var sourcePath = './patterns/styles/objects/banner.less'
+        var resultPath = './results/banner.json'
 
-        describe('for styles and scripts', function() {
+        var sourceDeclarations = uiLab.getFileDeclarations(sourcePath, {
+            allow: ['block', 'modifier']
+        })
 
-            it('throws an error when no declarations are found in a file', function() {
+        var resultDeclarations = readFileSync(resultPath)
+        resultDeclarations = JSON.parse(resultDeclarations)
+        sourceDeclarations.should.eql(resultDeclarations)
 
-                var filePath = './test/fixtures/styles/none.less'
-                var declarations = function() {
-                    uiLab.getDeclarations(filePath)
+    })
+
+    it('Throws an error when no declarations are found in a file', function() {
+
+        var filePath = './patterns/styles/_none.less'
+        var declarations = function() {
+            uiLab.getFileDeclarations(filePath)
+        }
+        declarations.should.throw('No declarations found in "./patterns/styles/_none.less".')
+
+        filePath = './patterns/scripts/_none.js'
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath)
+        }
+        declarations.should.throw('No declarations found in "./patterns/scripts/_none.js".')
+
+    })
+
+    it('Throws an error when unrecognized declarations are found in a file', function() {
+
+        var filePath = './patterns/styles/_unrecognized.less'
+        var declarations = function() {
+            uiLab.getFileDeclarations(filePath)
+        }
+        declarations.should.throw('Unrecognized declaration "<random> component" found in ' +
+            '"./patterns/styles/_unrecognized.less". There are no known allowed declaration types provided.')
+
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['nothing', 'here', 'dude']
+            })
+        }
+        declarations.should.throw('Unrecognized declaration "<random> component" found in ' +
+            '"./patterns/styles/_unrecognized.less". The declaration type must be one of the following: "<nothing>", "<here>", "<dude>".')
+
+        filePath = './patterns/scripts/_unrecognized.js'
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath)
+        }
+        declarations.should.throw('Unrecognized declaration "<random> component" found in ' +
+            '"./patterns/scripts/_unrecognized.js". There are no known allowed declaration types provided.')
+
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['nope']
+            })
+        }
+        declarations.should.throw('Unrecognized declaration "<random> component" found in ' +
+            '"./patterns/scripts/_unrecognized.js". The declaration type must be one of the following: "<nope>".')
+
+    })
+
+    it('Throws an error when a declaration must be the first in a file', function() {
+
+        var filePath = './patterns/styles/_first.less'
+        var declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['block', 'element'],
+                first: 'block'
+            })
+        }
+        declarations.should.throw('The "<block>" declaration must be the first declaration in the file ' +
+            '"./patterns/styles/_first.less" - but "<element>" appears first instead.')
+
+        filePath = './patterns/styles/_firstmissing.less'
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['block', 'element'],
+                first: 'block'
+            })
+        }
+        declarations.should.throw('The "<block>" declaration must be the first declaration in the file ' +
+            '"./patterns/styles/_firstmissing.less" - but "<element>" appears first instead.')
+
+    })
+
+    it('Throws an error when a contextual declaration is in the wrong context', function() {
+
+        var filePath = './patterns/styles/_contextless.less'
+        var declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['block', 'modifier'],
+                context: {
+                    modifier: ['block']
                 }
-                declarations.should.throw(ReferenceError)
+            })
+        }
+        declarations.should.throw('The "<modifier>" declaration has no context in the file ' +
+            '"./patterns/styles/_contextless.less" - but it must be declared after one of the following: "<block>".')
 
-                filePath = './test/fixtures/scripts/none.js'
-                declarations = function() {
-                    uiLab.getDeclarations(filePath)
+        filePath = './patterns/styles/_contextwrong.less'
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['block', 'modifier', 'random'],
+                context: {
+                    random: ['element', 'modifier', 'mod-random']
                 }
-                declarations.should.throw(ReferenceError)
             })
+        }
+        declarations.should.throw('The "<random>" declaration appears after "<block>" in the file ' +
+            '"./patterns/styles/_contextwrong.less" - but it must be declared after one of the ' +
+            'following: "<element>", "<modifier>", "<mod-random>".')
+    })
 
-            it('throws an error when unrecognized declarations are found in a file', function() {
-                var filePath = './test/fixtures/styles/unrecognized.less'
-                var declarations = function() { return uiLab.getDeclarations(filePath) }
-                declarations.should.throw(ReferenceError)
+})
 
-                filePath = './test/fixtures/scripts/unrecognized.js'
-                declarations = function() { return uiLab.getDeclarations(filePath) }
-                declarations.should.throw(ReferenceError)
-            })
 
-            it('returns an array of declarations found in an objects styles file', function() {
-                var filePath = './test/fixtures/styles/objects/component.less'
-                var declarations = uiLab.getDeclarations(filePath, defaults.styles.objects)
-                var filePathResult = './test/expects/styles/objects.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
+describe('.getPathDeclarations()', function() {
 
-            it('returns an array of declarations found in a widgets scripts file', function() {
-                var filePath = './test/fixtures/scripts/widgets/component.js'
-                var declarations = uiLab.getDeclarations(filePath, defaults.scripts.widgets)
-                var filePathResult = './test/expects/scripts/apis.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
+    var sourceGlobPattern = './patterns/markups/objects/**/*.html'
+    var resultPath = './results/markups.json'
+
+    var sourceDeclarations = uiLab.getPathDeclarations(sourceGlobPattern)
+
+    var resultDeclarations = readFileSync(resultPath)
+    resultDeclarations = JSON.parse(resultDeclarations)
+
+    it('Parses declarations from a globbing pattern', function() {
+        sourceDeclarations.should.eql(resultDeclarations)
+    })
+
+})
+
+
+describe('.buildPatterns()', function() {
+
+    describe('For variables', function() {
+
+        var sourcePatterns = uiLab.buildPatterns({
+            variables: './patterns/styles/_variables.less'
         })
+        var resultPath = './results/variables.json'
 
-        describe('for global styles', function() {
+        var resultPatterns = readFileSync(resultPath)
+        resultPatterns = JSON.parse(resultPatterns)
 
-            it('returns an array of declarations found in a helpers styles file while inheriting the file name', function() {
-                var filePath = './test/fixtures/styles/helpers/typography.less'
-                var declarations = uiLab.getDeclarations(filePath, defaults.styles.helpers)
-                var filePathResult = './test/expects/styles/helpers.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
-        })
-
-        describe('for variables styles', function() {
-
-            it('returns an array of declarations found in a variables styles file while interpolating variables into demos', function() {
-                var filePath = './test/fixtures/styles/_vars.less'
-                var declarations = uiLab.getDeclarations(filePath, defaults.styles.variables)
-                var filePathResult = './test/expects/styles/variables.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
-        })
-
-        describe('for demo markups', function() {
-
-            it('returns a declaration found in a demo markups file while inheriting from the path', function() {
-                var filePath = './test/fixtures/markups/[0]typography/[0]font-sizes.html'
-                var declarations = uiLab.getDeclarations(filePath, defaults.markups.demos)
-                var filePathResult = './test/expects/markups/inherited.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
-
-            it('returns sorted declarations by matching a globbing pattern while inheriting from the path', function() {
-                var filePath = './test/fixtures/markups/**/*.html'
-                var filePaths = glob.sync(filePath)
-                var declarations = filePaths.map(function(filePath) {
-                    return uiLab.getDeclarations(filePath, defaults.markups.demos)
-                })
-                var filePathResult = './test/expects/markups/sorted.json'
-                var expectations = readFileSync(filePathResult)
-                declarations = JSON.stringify(declarations, null, '  ')
-                declarations.should.eql(expectations)
-            })
+        it('Builds patterns given a globbing pattern to the variables file(s)', function() {
+            sourcePatterns.should.eql(resultPatterns)
         })
 
     })
 
+    // ....test helper styles have <helper> only
+    describe('For helpers', function() {
 
-    describe('.initiate', function() {
-
-        it('builds the lab using the options passed', function() {
-            var lab = uiLab.initiate({
-                markups: {
-                    demos: {
-                        src: './test/fixtures/markups/**/*.html'
-                    }
-                },
-                styles: {
-                    helpers: {
-                        src: './test/fixtures/styles/helpers/**/*.less'
-                    },
-                    objects: {
-                        src: './test/fixtures/styles/objects/**/*.less'
-                    },
-                    variables: {
-                        src: './test/fixtures/styles/_vars.less'
-                    }
-                },
-                scripts: {
-                    widgets: {
-                        src: './test/fixtures/scripts/widgets/**/*.js'
-                    }
-                }
-            })
-            var expectations = readFileSync('./test/expects/lab.json')
-            lab = JSON.stringify(lab, null, '  ')
-            lab.should.eql(expectations)
+        var sourcePatterns = uiLab.buildPatterns({
+            helpers: {
+                styles: './patterns/styles/helpers/**/*.less',
+                markups: './patterns/markups/helpers/**/*.html'
+            }
         })
+        var resultPath = './results/helpers.json'
+
+        var resultPatterns = readFileSync(resultPath)
+        resultPatterns = JSON.parse(resultPatterns)
+
+        it('Builds patterns given a globbing pattern to the helpers file(s)', function() {
+            sourcePatterns.should.eql(resultPatterns)
+        })
+
+    })
+
+    describe('For objects', function() {
+
+        var sourcePatterns = uiLab.buildPatterns({
+            objects: {
+                markups: './patterns/markups/objects/**/*.html',
+                styles: './patterns/styles/objects/**/*.less',
+                scripts: './patterns/scripts/objects/**/*.js'
+            }
+        })
+        var resultPath = './results/objects.json'
+
+        var resultPatterns = readFileSync(resultPath)
+        resultPatterns = JSON.parse(resultPatterns)
+
+        it('Builds patterns given globbing patterns to the markups, styles, and scripts', function() {
+            sourcePatterns.should.eql(resultPatterns)
+        })
+
     })
 
 })

@@ -1,0 +1,36 @@
+[{
+  "filePath": "./patterns/markups/objects/[0]button/[0]base.html",
+  "pattern": "button",
+  "variation": "base",
+  "code": "<div></div>"
+},{
+  "filePath": "./patterns/markups/objects/[0]button/[1]base-pointer.html",
+  "pattern": "button",
+  "variation": "base-pointer",
+  "code": "<div>pointer</div>"
+},{
+  "code": "<div>point soft</div>",
+  "filePath": "./patterns/markups/objects/[0]button/[2]base-pointer_soft.html",
+  "pattern": "button",
+  "variation": "base-pointer_soft"
+},{
+  "filePath": "./patterns/markups/objects/[0]button/[3]large.html",
+  "pattern": "button",
+  "variation": "large",
+  "code": "<div>large</div>"
+},{
+  "code": "<div>else</div>",
+  "filePath": "./patterns/markups/objects/[0]button/[4]large-pointer_soft.html",
+  "pattern": "button",
+  "variation": "large-pointer_soft"
+},{
+  "filePath": "./patterns/markups/objects/[1]banner/[0]base.html",
+  "pattern": "banner",
+  "variation": "base",
+  "code": "<div>another base</div>"
+},{
+  "filePath": "./patterns/markups/objects/[1]banner/[1]new.html",
+  "pattern": "banner",
+  "variation": "new",
+  "code": "<div>new</div>"
+}]

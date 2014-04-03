@@ -1,0 +1,47 @@
+{
+  "variables": [],
+  "helpers": [
+    {
+      "name": "typography",
+      "title": "Typography",
+      "description": "",
+      "variations": [
+        {
+          "name": "sizes",
+          "title": "Sizes",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/helpers/typography.less",
+              "component": "helper",
+              "code": ".big { font-size: big; }\n.normal { font-size: normal; }\n.small { font-size: small; }"
+            },
+            "markup": {
+              "path": "./patterns/markups/helpers/typography/[0]sizes.html",
+              "code": "<big>big text</big>\n<normal>normal text</normal>\n<small>small text</small>"
+            }
+          },
+          "demo": "<big>big text</big>\n<normal>normal text</normal>\n<small>small text</small>"
+        },
+        {
+          "name": "colors",
+          "title": "Colors",
+          "description": "",
+          "source": {
+            "styles": {
+              "path": "./patterns/styles/helpers/typography.less",
+              "component": "helper",
+              "code": ".red { color: red; }\n.green { color: green; }\n.blue { color: blue; }"
+            },
+            "markup": {
+              "path": "./patterns/markups/helpers/typography/[1]colors.html",
+              "code": "<red>red text</red>\n<green>green text</green>\n<blue>blue text</blue>"
+            }
+          },
+          "demo": "<red>red text</red>\n<green>green text</green>\n<blue>blue text</blue>"
+        }
+      ]
+    }
+  ],
+  "objects": []
+}
