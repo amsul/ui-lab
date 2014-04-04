@@ -207,7 +207,7 @@ describe('.buildPatterns()', function() {
             objects: {
                 markups: './patterns/markups/objects/**/*.html',
                 styles: './patterns/styles/objects/**/*.less',
-                scripts: './patterns/scripts/objects/**/*.js'
+                apis: './patterns/scripts/objects/**/*.js'
             }
         })
         var resultPath = './results/objects.json'
@@ -215,7 +215,7 @@ describe('.buildPatterns()', function() {
         var resultPatterns = readFileSync(resultPath)
         resultPatterns = JSON.parse(resultPatterns)
 
-        it('Builds patterns given globbing patterns to the markups, styles, and scripts', function() {
+        it('Builds patterns given globbing patterns to the markups, styles, and apis', function() {
             sourcePatterns.should.eql(resultPatterns)
         })
 

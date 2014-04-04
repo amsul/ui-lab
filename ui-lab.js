@@ -436,7 +436,7 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
 
 
 /**
- * Build patterns for objects using styles, markups, and scripts.
+ * Build patterns for objects using styles, markups, and apis.
  */
 function buildPatternsForObjects(objectsPatternsRegistry, options) {
 
@@ -514,9 +514,9 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
 
     logSilent('OK\n')
 
-    logSilent('Generating the objects’ scripts... ')
+    logSilent('Generating the objects’ apis... ')
 
-    var objectsScriptsPaths = glob.sync(options.objects.scripts)
+    var objectsScriptsPaths = glob.sync(options.objects.apis)
     objectsScriptsPaths.forEach(function(objectsScriptsPath) {
         var declarations = getFileDeclarations(objectsScriptsPath, {
             allow: ['api']
@@ -645,11 +645,11 @@ module.exports = {
  * Log warnings to the console based on the mode.
  */
 function warn(msg) {
-    if ( MODE == 'debug' ) {
-        log(msg.yellow)
+    if ( MODE == 'debug' || MODE == 'test' ) {
+        throw new ReferenceError(msg)
     }
     else {
-        throw new ReferenceError(msg)
+        log(msg.yellow)
     }
 }
 function log(msg) {
