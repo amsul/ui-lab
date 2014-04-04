@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.0, 24 February, 2014
+ * UI Lab v0.1.6, 04 April, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -66,6 +66,15 @@ function getFileDeclarations(filePath, options) {
         verifyDeclarationContext(declaration, declarations[declarations.length-1], filePath, options)
         if ( verifyDeclarationValidity(declaration, options) ) {
             declarations.push(declaration)
+        }
+    }
+
+    // If there’s a trailing chunk left over, add that to the actual code.
+    if ( filePath == 'assets/styles/_variables.less' ) {
+        var lastDeclaration = declarations[declarations.length - 1]
+        if ( lastDeclaration.codeAfter ) {
+            lastDeclaration.code += lastDeclaration.codeAfter
+            lastDeclaration.codeAfter = ''
         }
     }
 
@@ -141,6 +150,14 @@ function parseDeclarationFromMatch(match, filePath) {
         // Reduce the length of the declaration’s content.
         declarationContent = declarationContent.slice(parsedLength)
 
+    }
+
+    // If there’s a trailing chunk left over, add that to the code after.
+    if ( codeTrailingChunk &&
+        !declarationCodeAfter.match(
+            new RegExp(codeTrailingChunk.replace(/[\[\]\(\)\{\}\|\/\\\.\+\*\?\^\$]/g, '\\$&') + '$')
+        ) ) {
+        declarationCodeAfter += codeTrailingChunk
     }
 
     // If there’s no declaration code, fallback to the content.
@@ -454,9 +471,9 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
             allow: ['block', 'element', 'modifier', 'element-modifier'],
             first: 'block',
             context: {
-                'element': ['block', 'modifier'],
-                'modifier': ['block', 'element', 'element-modifier'],
-                'element-modifier': ['block', 'element', 'modifier']
+                'element': ['block', 'element', 'modifier'],
+                'modifier': ['block', 'element', 'modifier', 'element-modifier'],
+                'element-modifier': ['block', 'element', 'modifier', 'element-modifier']
             }
         })
         var name
@@ -660,18 +677,6 @@ function logSilent(msg) {
         log(msg.match(/^OK(\n|$)/) ? msg.green : msg.cyan)
     }
 }
-
-
-
-// function initiate(options) {
-
-//     // Move on to the styles helpers.
-//     log('Generating ' + 'styles.helpers '.cyan)
-//     targetOptions = options.styles.helpers
-//     filePaths = glob.sync(targetOptions.src)
-//     logLn('OK'.green)
-
-// }
 
 
 
