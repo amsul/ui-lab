@@ -78,7 +78,7 @@
         {
           "name": "large-pointer_soft",
           "title": "Large Pointer Soft",
-          "description": "",
+          "description": "this is a description",
           "source": {
             "styles": {
               "path": "./patterns/styles/objects/button.less",

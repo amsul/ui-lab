@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.6, 04 April, 2014
+ * UI Lab v0.1.7, 04 April, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -158,6 +158,11 @@ function parseDeclarationFromMatch(match, filePath) {
             new RegExp(codeTrailingChunk.replace(/[\[\]\(\)\{\}\|\/\\\.\+\*\?\^\$]/g, '\\$&') + '$')
         ) ) {
         declarationCodeAfter += codeTrailingChunk
+    }
+
+    // If there’s a description, clean up any leading asterisks.
+    if ( componentDescription ) {
+        componentDescription = componentDescription.replace(/^\*\ */, '')
     }
 
     // If there’s no declaration code, fallback to the content.
