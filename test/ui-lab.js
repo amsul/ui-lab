@@ -9,7 +9,6 @@
 var uiLab = require('./../ui-lab.js')
 var fs = require('fs')
 var iconv = require('iconv-lite')
-var glob = require('glob')
 require('should')
 
 
@@ -30,6 +29,21 @@ describe('.getFileDeclarations()', function() {
 
         var sourcePath = './patterns/styles/objects/banner.less'
         var resultPath = './results/banner.json'
+
+        var sourceDeclarations = uiLab.getFileDeclarations(sourcePath, {
+            allow: ['block', 'modifier']
+        })
+
+        var resultDeclarations = readFileSync(resultPath)
+        resultDeclarations = JSON.parse(resultDeclarations)
+        sourceDeclarations.should.eql(resultDeclarations)
+
+    })
+
+    it('Captures descriptions that wrap to multiple lines', function() {
+
+        var sourcePath = './patterns/styles/multiline-description.less'
+        var resultPath = './results/multiline-description.json'
 
         var sourceDeclarations = uiLab.getFileDeclarations(sourcePath, {
             allow: ['block', 'modifier']

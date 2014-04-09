@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.7, 04 April, 2014
+ * UI Lab v0.1.8, 09 April, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -69,17 +69,16 @@ function getFileDeclarations(filePath, options) {
         }
     }
 
-    // If there’s a trailing chunk left over, add that to the actual code.
-    if ( filePath == 'assets/styles/_variables.less' ) {
-        var lastDeclaration = declarations[declarations.length - 1]
-        if ( lastDeclaration.codeAfter ) {
-            lastDeclaration.code += lastDeclaration.codeAfter
-            lastDeclaration.codeAfter = ''
-        }
-    }
-
+    // Make sure a declaration was found.
     if ( !declarations.length ) {
         warn('No declarations found in "' + filePath + '".')
+    }
+
+    // If there’s a trailing chunk left over, add that to the actual code.
+    var lastDeclaration = declarations[declarations.length - 1]
+    if ( lastDeclaration.codeAfter ) {
+        lastDeclaration.code += lastDeclaration.codeAfter
+        lastDeclaration.codeAfter = ''
     }
 
     return declarations
@@ -97,7 +96,7 @@ function parseDeclarationFromMatch(match, filePath) {
     var declarationContent = match[3]
 
     // Match the component of the declaration.
-    var componentMatch = declarationComment.match(/<([\w-_]+)>\s*?([\w-_]+)(?:\s*([\s\S]*?)(?=\n|```))?/)
+    var componentMatch = declarationComment.match(/<([\w-_]+)>\s*?([\w-_]+)(?:\s*([\s\S]*?)(?=```|\*\/))?/)
     var componentType = componentMatch && componentMatch[1] || ''
     var componentName = componentMatch && componentMatch[2] || ''
     var componentDescription = componentMatch && componentMatch[3] || ''
@@ -160,9 +159,10 @@ function parseDeclarationFromMatch(match, filePath) {
         declarationCodeAfter += codeTrailingChunk
     }
 
-    // If there’s a description, clean up any leading asterisks.
+    // If there’s a description, clean up the white spacing.
     if ( componentDescription ) {
-        componentDescription = componentDescription.replace(/^\*\ */, '')
+        componentDescription = componentDescription.replace(/\n[\ \t]*(?![\ \t]*\n)/g, ' ')
+        componentDescription = cleanWrappingWhitespace(componentDescription)
     }
 
     // If there’s no declaration code, fallback to the content.
@@ -322,7 +322,7 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
                 variablesPattern = cachedPatterns[name] = {
                     name: name,
                     title: capitalizeSplit(name),
-                    description: declaration.componentDescription || '',
+                    description: declaration.componentDescription,
                     variations: []
                 }
             }
@@ -335,7 +335,7 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
             var variablesPatternVariation = {
                 name: variationName,
                 title: capitalizeSplit(variationName),
-                description: description || '',
+                description: description,
                 demos: interpolateVariables(declaration.code, demo),
                 source: {
                     styles: {
@@ -391,7 +391,7 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
                 helperPattern = cachedPatterns[name] = {
                     name: name,
                     title: capitalizeSplit(name),
-                    description: declaration.componentDescription || '',
+                    description: declaration.componentDescription,
                     variations: []
                 }
             }
@@ -402,7 +402,7 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
             var helperPatternVariation = {
                 name: variationName,
                 title: capitalizeSplit(variationName),
-                description: description || '',
+                description: description,
                 source: {
                     styles: {
                         path: declaration.filePath,
@@ -508,7 +508,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
                 objectPattern = cachedPatterns[name] = {
                     name: name,
                     title: capitalizeSplit(name),
-                    description: declaration.componentDescription || '',
+                    description: declaration.componentDescription,
                     variations: [],
                     api: {}
                 }
@@ -521,7 +521,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
             var objectPatternVariation = {
                 name: variationName,
                 title: capitalizeSplit(variationName),
-                description: description || '',
+                description: description,
                 source: {
                     styles: {
                         path: declaration.filePath,
@@ -552,7 +552,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
             var patternRegistry = cachedPatterns[name]
             patternRegistry.api.markup = {
                 filePath: declaration.filePath,
-                description: declaration.componentDescription || '',
+                description: declaration.componentDescription,
                 code: cleanWrappingWhitespace(declaration.code)
             }
         })
