@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.8, 09 April, 2014
+ * UI Lab v0.1.9, 10 April, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -383,6 +383,7 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
         var declarations = getFileDeclarations(helpersStylesPath, {
             allow: ['helpers', 'group'],
             first: 'helpers',
+            onlyOnce: true,
             context: {
                 'group': ['helpers', 'group']
             }

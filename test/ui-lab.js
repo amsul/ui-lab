@@ -141,6 +141,17 @@ describe('.getFileDeclarations()', function() {
         }
         declarations.should.throw('The "<block>" declaration can only appear once ' +
             'in the file "./patterns/styles/_overloaded.less".')
+
+        filePath = './patterns/styles/_overloaded-helper.less'
+        declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['helpers', 'group'],
+                first: 'helpers',
+                onlyOnce: true
+            })
+        }
+        declarations.should.throw('The "<helpers>" declaration can only appear once ' +
+            'in the file "./patterns/styles/_overloaded-helper.less".')
     })
 
     it('Throws an error when a contextual declaration is in the wrong context', function() {
