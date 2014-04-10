@@ -32,7 +32,7 @@
             "styles": {
               "path": "./patterns/styles/objects/button.less",
               "component": "element",
-              "code": ".button-pointer {}"
+              "code": "    .button-pointer {}"
             },
             "markup": {
               "path": "./patterns/markups/objects/[0]button/[1]base-pointer.html",
@@ -49,7 +49,7 @@
             "styles": {
               "path": "./patterns/styles/objects/button.less",
               "component": "element-modifier",
-              "code": ".button-pointer_soft {}"
+              "code": "    .button-pointer_soft {}"
             },
             "markup": {
               "path": "./patterns/markups/objects/[0]button/[2]base-pointer_soft.html",
@@ -83,7 +83,7 @@
             "styles": {
               "path": "./patterns/styles/objects/button.less",
               "component": "element-modifier",
-              "code": ".button-pointer_soft {}"
+              "code": "    .button-pointer_soft {}"
             },
             "markup": {
               "path": "./patterns/markups/objects/[0]button/[4]large-pointer_soft.html",

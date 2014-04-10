@@ -7,7 +7,6 @@
 'use strict';
 
 
-var _ = require('lodash')
 var glob = require('glob')
 var fs = require('fs')
 var iconv = require('iconv-lite')
@@ -54,7 +53,7 @@ function getPathDeclarations(globPattern) {
 function getFileDeclarations(filePath, options) {
 
     var fileContents = readFileSync(filePath)
-    var declarationRegExp = /(\ *)(\/\*[\s\S]*?\*\/)\n*([\s\S]*)/
+    var declarationRegExp = /([\ \t]*\/\*[\s\S]*?\*\/)\n*([\s\S]*)/
     var declarations = []
     var match
 
@@ -91,9 +90,8 @@ function getFileDeclarations(filePath, options) {
 function parseDeclarationFromMatch(match, filePath) {
 
     // Match the base of the declaration.
-    var declarationIndent = match[1]
-    var declarationComment = match[2]
-    var declarationContent = match[3]
+    var declarationComment = match[1]
+    var declarationContent = match[2]
 
     // Match the component of the declaration.
     var componentMatch = declarationComment.match(/<([\w-_]+)>\s*?([\w-_]+)(?:\s*([\s\S]*?)(?=```|\*\/))?/)
@@ -162,7 +160,6 @@ function parseDeclarationFromMatch(match, filePath) {
     // If there’s a description, clean up the white spacing.
     if ( componentDescription ) {
         componentDescription = componentDescription.replace(/\n[\ \t]*(?![\ \t]*\n)/g, ' ')
-        componentDescription = cleanWrappingWhitespace(componentDescription)
     }
 
     // If there’s no declaration code, fallback to the content.
@@ -175,10 +172,10 @@ function parseDeclarationFromMatch(match, filePath) {
         filePath: filePath,
         componentType: componentType,
         componentName: componentName,
-        componentDescription: componentDescription,
+        componentDescription: cleanWrappingWhitespace(componentDescription),
         demoLanguage: demoLanguage,
         demoContent: cleanWrappingWhitespace(demoContent),
-        code: cleanWrappingWhitespace(declarationCode),
+        code: cleanWrappingWhitespace(declarationCode, { indent: true }),
         codeAfter: declarationCodeAfter,
         length: declarationComment.length + declarationCode.length
     }
@@ -643,8 +640,13 @@ function capitalizeSplit(string) {
 /**
  * Helper function to manipulate whitespace in a string.
  */
-function cleanWrappingWhitespace(string) {
-    var match = string && string.match(/([\n\ ]+)?([\s\S]+?)([\n\ ]*?$)/)
+function cleanWrappingWhitespace(string, options) {
+    var match
+    if ( options && options.indent ) {
+        match = string && string.match(/([\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
+        return match && (match[1] || '') + (match[2] || '')
+    }
+    match = string && string.match(/([\n\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
     return match && match[2] || ''
 }
 
@@ -703,19 +705,3 @@ function logSilent(msg) {
         log(msg.match(/^OK(\n|$)/) ? msg.green : msg.cyan)
     }
 }
-
-
-
-// function removeExtraSpacing(content, options) {
-//     if ( !content ) return
-//     var indentRegEx = /^\s*?(\ *?)[^\s]/,
-//         contentRegEx = /^\s*([\s\S]+?)(\s*)$/,
-//         indentation = content.split(indentRegEx)[1] || '',
-//         snippet = content.split(contentRegEx)[1] || ''
-//     snippet = snippet.match(/[^\s]/) ? snippet : ''
-//     content = indentation + snippet
-//     if ( options && options.unindent ) {
-//         content = content.replace( new RegExp('^' + indentation, 'gm'), '' )
-//     }
-//     return content
-// }

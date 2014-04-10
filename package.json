@@ -33,7 +33,6 @@
     "test": "mocha"
   },
   "dependencies": {
-    "lodash": "~2.4.1",
     "should": "~3.1.2",
     "glob": "~3.2.8",
     "iconv-lite": "~0.2.11",
