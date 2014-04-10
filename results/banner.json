@@ -4,8 +4,8 @@
     "componentName": "banner",
     "componentDescription": "This is some description for the module",
     "demoLanguage": "html",
-    "demoContent": "\n    <div class=banner />\n    ",
-    "code": ".banner {}\n\n    /* some comment */\n    .banner-else {}\n\n\n",
+    "demoContent": "<div class=banner />",
+    "code": ".banner {}\n\n    /* some comment */\n    .banner-else {}",
     "codeAfter": "/**\n    <modifier> new\n*/\n.banner_new {}",
     "length": 171
 },
@@ -15,7 +15,7 @@
   "componentName": "new",
   "componentDescription": "",
   "demoLanguage": null,
-  "demoContent": null,
+  "demoContent": "",
   "code": ".banner_new {}",
   "codeAfter": "",
   "length": 39

@@ -4,7 +4,7 @@
     {
       "name": "typography",
       "title": "Typography",
-      "description": "",
+      "description": "All the typographical helper class names.",
       "variations": [
         {
           "name": "sizes",
@@ -13,7 +13,7 @@
           "source": {
             "styles": {
               "path": "./patterns/styles/helpers/typography.less",
-              "component": "helper",
+              "component": "group",
               "code": ".big { font-size: big; }\n.normal { font-size: normal; }\n.small { font-size: small; }"
             },
             "markup": {
@@ -30,7 +30,7 @@
           "source": {
             "styles": {
               "path": "./patterns/styles/helpers/typography.less",
-              "component": "helper",
+              "component": "group",
               "code": ".red { color: red; }\n.green { color: green; }\n.blue { color: blue; }"
             },
             "markup": {

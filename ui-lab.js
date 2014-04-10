@@ -177,8 +177,8 @@ function parseDeclarationFromMatch(match, filePath) {
         componentName: componentName,
         componentDescription: componentDescription,
         demoLanguage: demoLanguage,
-        demoContent: demoContent,
-        code: declarationCode,
+        demoContent: cleanWrappingWhitespace(demoContent),
+        code: cleanWrappingWhitespace(declarationCode),
         codeAfter: declarationCodeAfter,
         length: declarationComment.length + declarationCode.length
     }
@@ -214,6 +214,10 @@ function verifyDeclarationContext(declaration, prevDeclaration, filePath, option
             '"<' + previousType + '>" in the file "' + filePath + '" - ' +
             'but it must be declared after one of the following: ' +
             '"<' + context.join('>", "<') + '>".')
+    }
+    if ( previousType && 'first' in options && options.first === currentType && options.onlyOnce ) {
+        warn('The "<' + currentType + '>" declaration can only appear once ' +
+            'in the file "' + filePath + '".')
     }
 
 }
@@ -300,7 +304,11 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
     var latestPatternName
     variableStylesPaths.forEach(function(variableStylesPath) {
         var declarations = getFileDeclarations(variableStylesPath, {
-            allow: ['variables', 'group']
+            allow: ['variables', 'group'],
+            first: 'variables',
+            context: {
+                'group': ['variables', 'group']
+            }
         })
         var name
         var demo
@@ -312,7 +320,7 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
                 name = variationName
                 variationName = 'base'
                 description = 'The base variables'
-                demo = cleanWrappingWhitespace(declaration.demoContent)
+                demo = declaration.demoContent
             }
             var variablesPattern
             if ( name in cachedPatterns ) {
@@ -340,11 +348,11 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
                 source: {
                     styles: {
                         path: declaration.filePath,
-                        code: cleanWrappingWhitespace(declaration.code),
+                        code: declaration.code,
                     },
                     markup: {
                         path: declaration.filePath,
-                        code: cleanWrappingWhitespace(demo)
+                        code: demo
                     }
                 }
             }
@@ -366,6 +374,7 @@ function buildPatternsForVariables(variablesPatternsRegistry, options) {
  */
 function buildPatternsForHelpers(helpersPatternsRegistry, options) {
 
+    var cachedNames = {}
     var cachedVariations = {}
     var cachedPatterns = {}
     var cachedCompletedVariations = {}
@@ -375,7 +384,11 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
     var helpersStylesPaths = glob.sync(options.helpers.styles)
     helpersStylesPaths.forEach(function(helpersStylesPath) {
         var declarations = getFileDeclarations(helpersStylesPath, {
-            allow: ['helper']
+            allow: ['helpers', 'group'],
+            first: 'helpers',
+            context: {
+                'group': ['helpers', 'group']
+            }
         })
         var pathDeclaration = getPathDeclarations(helpersStylesPath)
         var name = pathDeclaration[0].variation
@@ -383,6 +396,11 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
             // if(index>0)return
             var variationName = declaration.componentName
             var description = declaration.componentDescription
+            if ( declaration.componentType == 'helpers' ) {
+                name = variationName
+                variationName = 'base'
+                description = 'The base helpers'
+            }
             var helperPattern
             if ( name in cachedPatterns ) {
                 helperPattern = cachedPatterns[name]
@@ -396,9 +414,11 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
                 }
             }
             var fullName = name + '/' + variationName
-            if ( fullName in cachedVariations ) {
+            if ( fullName in cachedNames ) {
                 warn('Styles for the pattern "' + fullName + '" already exist.')
             }
+            cachedNames[fullName] = true
+            if ( !declaration.code ) return
             var helperPatternVariation = {
                 name: variationName,
                 title: capitalizeSplit(variationName),
@@ -407,7 +427,7 @@ function buildPatternsForHelpers(helpersPatternsRegistry, options) {
                     styles: {
                         path: declaration.filePath,
                         component: declaration.componentType,
-                        code: cleanWrappingWhitespace(declaration.code)
+                        code: declaration.code
                     }
                 }
             }
@@ -475,6 +495,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
         var declarations = getFileDeclarations(objectsStylesPath, {
             allow: ['block', 'element', 'modifier', 'element-modifier'],
             first: 'block',
+            onlyOnce: true,
             context: {
                 'element': ['block', 'element', 'modifier'],
                 'modifier': ['block', 'element', 'modifier', 'element-modifier'],
@@ -526,7 +547,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
                     styles: {
                         path: declaration.filePath,
                         component: declaration.componentType,
-                        code: cleanWrappingWhitespace(declaration.code)
+                        code: declaration.code
                     }
                 }
             }
@@ -553,7 +574,7 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
             patternRegistry.api.markup = {
                 filePath: declaration.filePath,
                 description: declaration.componentDescription,
-                code: cleanWrappingWhitespace(declaration.code)
+                code: declaration.code
             }
         })
     })

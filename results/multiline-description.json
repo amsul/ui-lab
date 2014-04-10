@@ -5,8 +5,8 @@
     "componentName": "multiline-description",
     "componentDescription": "This is a description that stretches across multiple lines and stays in tact still :)",
     "demoLanguage": "javascript",
-    "demoContent": "\n    {\n        \"something\": true,\n        \"somethingelse\": false\n    }\n    ",
-    "code": ".multiline-description {}\n\n\n",
+    "demoContent": "{\n        \"something\": true,\n        \"somethingelse\": false\n    }",
+    "code": ".multiline-description {}",
     "codeAfter": "/**\n    <block> multiline-withbreaks\n    And you know what? We can\n    also separate it into paragraphs\n    if that’s what we need.\n\n    Kinda cool right? I know.\n*/",
     "length": 262
   },
@@ -16,7 +16,7 @@
     "componentName": "multiline-withbreaks",
     "componentDescription": "And you know what? We can also separate it into paragraphs if that’s what we need.\n Kinda cool right? I know.",
     "demoLanguage": null,
-    "demoContent": null,
+    "demoContent": "",
     "code": "",
     "codeAfter": "",
     "length": 165
