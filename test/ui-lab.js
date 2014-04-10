@@ -129,6 +129,20 @@ describe('.getFileDeclarations()', function() {
 
     })
 
+    it('Throws an error when a declaration that must be first is only allowed once but is repeated in the file', function() {
+
+        var filePath = './patterns/styles/_overloaded.less'
+        var declarations = function() {
+            uiLab.getFileDeclarations(filePath, {
+                allow: ['block', 'element'],
+                first: 'block',
+                onlyOnce: true
+            })
+        }
+        declarations.should.throw('The "<block>" declaration can only appear once ' +
+            'in the file "./patterns/styles/_overloaded.less".')
+    })
+
     it('Throws an error when a contextual declaration is in the wrong context', function() {
 
         var filePath = './patterns/styles/_contextless.less'
