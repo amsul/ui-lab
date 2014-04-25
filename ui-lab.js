@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.9, 10 April, 2014
+ * UI Lab v0.1.10, 10 April, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -656,6 +656,9 @@ function cleanWrappingWhitespace(string, options) {
  * Helper function to interpolate variables into a demo.
  */
 function interpolateVariables(code, demo) {
+    if ( !demo ) {
+        return []
+    }
     var regex = /(@[\w-_]+)\s*?:(?:\s+)?([\s\S]*?);/g,
         matches = code.match(regex)
     if ( matches ) {
