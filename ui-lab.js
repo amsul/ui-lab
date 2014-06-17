@@ -1,5 +1,5 @@
 /*!
- * UI Lab v0.1.10, 10 April, 2014
+ * UI Lab v0.1.11, 17 June, 2014
  * By Amsul, http://amsul.ca
  * Hosted on http://github.com/amsul/ui-lab
  */
@@ -69,15 +69,17 @@ function getFileDeclarations(filePath, options) {
     }
 
     // Make sure a declaration was found.
-    if ( !declarations.length ) {
+    if ( !declarations.length && !options.allowEmpty ) {
         warn('No declarations found in "' + filePath + '".')
     }
 
     // If there’s a trailing chunk left over, add that to the actual code.
-    var lastDeclaration = declarations[declarations.length - 1]
-    if ( lastDeclaration.codeAfter ) {
-        lastDeclaration.code += lastDeclaration.codeAfter
-        lastDeclaration.codeAfter = ''
+    if ( declarations.length ) {
+        var lastDeclaration = declarations[declarations.length - 1]
+        if ( lastDeclaration.codeAfter ) {
+            lastDeclaration.code += lastDeclaration.codeAfter
+            lastDeclaration.codeAfter = ''
+        }
     }
 
     return declarations
@@ -85,7 +87,7 @@ function getFileDeclarations(filePath, options) {
 
 
 /**
- * Build a declaration object from a content match.
+ * Parse a declaration object from a content match.
  */
 function parseDeclarationFromMatch(match, filePath) {
 
@@ -174,13 +176,50 @@ function parseDeclarationFromMatch(match, filePath) {
         componentName: componentName,
         componentDescription: cleanWrappingWhitespace(componentDescription),
         demoLanguage: demoLanguage,
-        demoContent: cleanWrappingWhitespace(demoContent),
+        demoContent: cleanWrappingWhitespace(demoContent, { stripIndent: true }),
         code: cleanWrappingWhitespace(declarationCode, { indent: true }),
         codeAfter: declarationCodeAfter,
         length: declarationComment.length + declarationCode.length
     }
 
     return declaration
+}
+
+
+/**
+ * Parse JSON-like data that takes comments as description.
+ */
+function parseJSONLikeData(content, filePath) {
+
+    if ( !content ) {
+        return content
+    }
+
+    content = content.replace(/^\{/, '')
+
+    var match
+    var properties = []
+    var regex = /^(((?:\s*\/\/\s*[^\n]+)*)\s*([\w]+)\s*:\s*([^\n]+)(?:,|\s*\}))/
+
+    while ( (match = content.match(regex)) ) {
+        var chunk = match[1]
+        var description = match[2]
+        var name = match[3]
+        var value = match[4]
+        var property = {
+            description: cleanSingleLineComments(description),
+            name: name,
+            value: value
+        }
+        console.log(property);
+        if ( !property.name || !property.value ) {
+            warn('Invalid property found in the file "' + filePath + '".')
+        }
+        properties.push(property)
+        content = content.replace(chunk, '')
+    }
+
+    return properties;
 }
 
 
@@ -560,19 +599,23 @@ function buildPatternsForObjects(objectsPatternsRegistry, options) {
     var objectsScriptsPaths = glob.sync(options.objects.apis)
     objectsScriptsPaths.forEach(function(objectsScriptsPath) {
         var declarations = getFileDeclarations(objectsScriptsPath, {
-            allow: ['api']
+            allow: ['api'],
+            allowEmpty: true
         })
         declarations.forEach(function(declaration) {
             var name = declaration.componentName
             if ( !(name in cachedNames) ) {
                 warn('Styles for the pattern "' + name + '" are not defined.')
             }
+            if ( !declaration.demoContent ) {
+                warn('API demos for the pattern "' + name + '" are not defined.')
+            }
             cachedNames[name] = 'done'
             var patternRegistry = cachedPatterns[name]
-            patternRegistry.api.markup = {
-                filePath: declaration.filePath,
+            patternRegistry.api = {
+                path: declaration.filePath,
                 description: declaration.componentDescription,
-                code: declaration.code
+                properties: parseJSONLikeData(declaration.demoContent, declaration.filePath)
             }
         })
     })
@@ -643,12 +686,33 @@ function capitalizeSplit(string) {
  */
 function cleanWrappingWhitespace(string, options) {
     var match
-    if ( options && options.indent ) {
-        match = string && string.match(/([\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
-        return match && (match[1] || '') + (match[2] || '')
+    if ( !string ) {
+        return string
     }
-    match = string && string.match(/([\n\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
+    if ( options ) {
+        if ( options.indent ) {
+            match = string.match(/([\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
+            return match && (match[1] || '') + (match[2] || '')
+        }
+        if ( options.stripIndent ) {
+            var firstIndent = string.match(/^\n*([ \t]+)/)
+            firstIndent = firstIndent && firstIndent[1]
+            string = cleanWrappingWhitespace(string)
+            string = string.replace(new RegExp('\n' + firstIndent, 'g'), '\n')
+            return string
+        }
+    }
+    match = string.match(/([\n\ \t]+)?([\s\S]+?)([\n\ \t]*?$)/)
     return match && match[2] || ''
+}
+
+
+/**
+ * Helper function to clean single line comments along with whitespace.
+ */
+function cleanSingleLineComments(string) {
+    string = string.replace(/[ \t]*\/\/[ \t]*/g, '')
+    return cleanWrappingWhitespace(string)
 }
 
 

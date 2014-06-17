@@ -94,11 +94,10 @@
         }
       ],
       "api": {
-        "markup": {
-          "filePath": "./patterns/scripts/objects/api.js",
-          "description": "The button’s api through markup",
-          "code": "$('[role=button]').buttonize()"
-        }
+        "demo": "<div role=button />",
+        "description": "The button’s api through markup",
+        "filePath": "./patterns/scripts/objects/api.js",
+        "language": "html"
       }
     },
     {
@@ -142,11 +141,10 @@
         }
       ],
       "api": {
-        "markup": {
-          "code": "$('[role=banner]').bannerize()",
-          "description": "The banner’s api through javascript",
-          "filePath": "./patterns/scripts/objects/api.js"
-        }
+        "demo": "{\n        lazyload: true\n    }",
+        "description": "The banner’s api through javascript",
+        "filePath": "./patterns/scripts/objects/api.js",
+        "language": "javascript"
       }
     }
   ]
